@@ -20,21 +20,19 @@ if [ "$(systemd-detect-virt)" == "lxc" ]; then
 fi
 
 # Check OS version
-if [[ -e /etc/debian_version ]]; then
-    source /etc/os-release
-    OS=$ID # debian or ubuntu
-elif [[ -e /etc/fedora-release ]]; then
+if [[ -e /etc/fedora-release ]]; then
     OS=fedora
 elif [[ -e /etc/centos-release ]]; then
     OS=centos
 elif [[ -e /etc/arch-release ]]; then
     OS=arch
 else
-    echo "Looks like you aren't running this installer on a Debian, Ubuntu, Fedora, CentOS or Arch Linux system"
+    echo "Looks like you aren't running this installer on a Fedora, CentOS or Arch Linux system"
     exit 1
 fi
 
 # Detect public IPv4 address and pre-fill for the user
+#SERVER_PUB_IPV4=$(curl icanhazip.com)
 SERVER_PUB_IPV4=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 read -rp "IPv4 or IPv6 public address: " -e -i "$SERVER_PUB_IPV4" SERVER_PUB_IP
 
@@ -51,7 +49,7 @@ read -rp "Server's WireGuard IPv4 " -e -i "$SERVER_WG_IPV4" SERVER_WG_IPV4
 SERVER_WG_IPV6="fd42:42:42::1"
 read -rp "Server's WireGuard IPv6 " -e -i "$SERVER_WG_IPV6" SERVER_WG_IPV6
 
-SERVER_PORT=1194
+SERVER_PORT=1666
 read -rp "Server's WireGuard port " -e -i "$SERVER_PORT" SERVER_PORT
 
 CLIENT_WG_IPV4="10.66.66.2"
@@ -61,23 +59,14 @@ CLIENT_WG_IPV6="fd42:42:42::2"
 read -rp "Client's WireGuard IPv6 " -e -i "$CLIENT_WG_IPV6" CLIENT_WG_IPV6
 
 # Adguard DNS by default
-CLIENT_DNS_1="176.103.130.130"
+CLIENT_DNS_1="1.1.1.1"
 read -rp "First DNS resolver to use for the client: " -e -i "$CLIENT_DNS_1" CLIENT_DNS_1
 
-CLIENT_DNS_2="176.103.130.131"
+CLIENT_DNS_2="1.0.0.1"
 read -rp "Second DNS resolver to use for the client: " -e -i "$CLIENT_DNS_2" CLIENT_DNS_2
 
 # Install WireGuard tools and module
-if [[ "$OS" = 'ubuntu' ]]; then
-    add-apt-repository ppa:wireguard/wireguard
-    apt-get update
-    apt-get install wireguard
-elif [[ "$OS" = 'debian' ]]; then
-    echo "deb http://deb.debian.org/debian/ unstable main" > /etc/apt/sources.list.d/unstable.list
-    printf 'Package: *\nPin: release a=unstable\nPin-Priority: 90\n' > /etc/apt/preferences.d/limit-unstable
-    apt update
-    apt install wireguard
-elif [[ "$OS" = 'fedora' ]]; then
+if [[ "$OS" = 'fedora' ]]; then
     dnf copr enable jdoss/wireguard
     dnf install wireguard-dkms wireguard-tools
 elif [[ "$OS" = 'centos' ]]; then
